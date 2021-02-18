@@ -28,8 +28,11 @@ const Home = () => {
     });
 
     socket.emit('joinRoom', { username });
+
+    socket.on('matchedPlayers', (data) => {});
   }, []);
 
+  useEffect(() => {}, []);
   return (
     <Fragment>
       <NotificationContainer />
@@ -44,7 +47,9 @@ const Home = () => {
         </li>
       </ul>
       <Switch>
-        <Route path={`${path}/chess`} component={Chess} />
+        <Route path={`${path}/chess`}>
+          {socket && <Chess {...{ username, socket }} />}
+        </Route>
         <Route path={`${path}/users`} component={Users} />
       </Switch>
     </Fragment>
