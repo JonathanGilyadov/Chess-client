@@ -4,15 +4,21 @@ import { useImmer } from 'use-immer';
 
 const Chess = require('chess.js');
 
-const App = ({ socket, game }) => {
+const App = ({ socket, game, username }) => {
 	const { id } = game;
 	const [chess] = useState(new Chess(game.fen));
 	const [messages, setMessages] = useImmer([]);
 	const [value, setValue] = useState([]);
 	const [fen, setFen] = useState(chess.fen());
+	const [turn, setTurn] = useState(game.turn);
+
+	console.log(game);
+	const player =
+		game.playerOne.username === username ? game.playerOne : game.playerTwo;
 
 	const sendMessage = () => {
-		socket.emit('message', { value, id });
+		console.log(game);
+		socket.emit('message', { value, roomID: id });
 	};
 
 	useEffect(() => {
@@ -24,13 +30,33 @@ const App = ({ socket, game }) => {
 		});
 
 		// Listen for moves
-		socket.on('move', (data) => {});
+		socket.on('move', (data) => {
+			const { fen, move, turn } = data;
+
+			console.log(turn);
+			chess.move(move);
+
+			// Set new fen
+			setFen(fen);
+
+			//Set new turn
+			setTurn(turn);
+		});
 	}, []);
 
 	const handleMove = (move) => {
-		chess.move(move);
-		socket.emit('move', { move, id, fen: chess.fen() });
-		console.log(move);
+		// Check if it's players turn
+		console.log(game.turn);
+		console.log(player.color);
+		if (turn !== player.color) return;
+
+		// Check if move is legal
+		if (chess.move(move)) {
+			// Send move to server
+			socket.emit('move', { move, id: game.id, fen: chess.fen() });
+		} else {
+			alert('Move is illegal!');
+		}
 	};
 
 	// const handleMove = (move) => {
@@ -62,6 +88,7 @@ const App = ({ socket, game }) => {
 						promotion: 'q',
 					})
 				}
+				orientation={player.color}
 			/>
 			<div>
 				{messages.map((message, index) => (
